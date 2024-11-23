@@ -8,18 +8,7 @@ let config;
 let previousItems;
 
 function initialize() {
-    let configLoadedFromVolume = true;
-    let configFile;
-    try {
-        configFile = fs.readFileSync('./config/config.yml', 'utf-8');
-    } catch (e) {
-        configLoadedFromVolume = false;
-        configFile = fs.readFileSync('./config.yml', 'utf-8');
-    }
-    config = yaml.parse(configFile);
-    if (!configLoadedFromVolume) {
-        console.log('config.yml not found in volume.  Using bundled file.');
-    }
+    config = yaml.parse(fs.readFileSync('./config/config.yml', 'utf-8'));
 }
 
 async function getRssFeedItems() {
@@ -61,7 +50,7 @@ function formatMessage(message) {
 
 initialize();
 
-cron.schedule('* * * * *', async () => {
+cron.schedule(config.cronExpression, async () => {
     const newItems = await getRssFeedItems();
     if (previousItems) {
         newItems.forEach((value, key) => {
