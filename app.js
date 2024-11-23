@@ -36,7 +36,6 @@ function sendNotification(feedName, message, title, link) {
   const feed = feeds.get(feedName);
   const {priority, tags} = getPriorityAndTags(title, message, feed);
   if (priority === 'ignore') {
-    console.log('Ignoring message: ' + message);
     return;
   }
   const options = {
@@ -45,10 +44,12 @@ function sendNotification(feedName, message, title, link) {
     headers: {
       title: title,
       priority: priority,
-      tags: tags,
       click: link
     }
   };
+  if (tags) {
+    options.headers.tags = tags.join(',');
+  }
   fetch(config.ntfyUrl + '/' + feed.topic, options)
       .then()
       .catch(error => console.error('Error:', error));
