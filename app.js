@@ -2,62 +2,130 @@ import fs from 'fs';
 import cron from 'node-cron';
 import Parser from 'rss-parser';
 import * as yaml from "yaml";
+
 const parser = new Parser();
 
 let config;
 let previousItems;
+let feeds;
+let cronJobs = [];
 
 function initialize() {
-    config = yaml.parse(fs.readFileSync('./config/config.yml', 'utf-8'));
+  config = yaml.parse(fs.readFileSync('./config/config.yml', 'utf-8'));
+  feeds = new Map();
+  previousItems = new Map();
+  config.feeds.forEach(feed => {
+    feeds.set(feed.name, feed);
+  });
 }
 
-async function getRssFeedItems() {
-    const rssFeed = await parser.parseURL(config.rssUrl);
-    const items = new Map();
+async function getRssFeedItems(urls) {
+  const items = new Map();
+  for (const url of urls) {
+    const rssFeed = await parser.parseURL(url);
     await rssFeed.items.forEach(item => {
-        items.set(
-            item.title + item.content,
-            { title: item.title, content: item.content, link: item.link });
+      items.set(
+          item.title + item.content,
+          {title: item.title, content: item.content, link: item.link});
     });
-    return items;
+  }
+  return items;
 }
 
-function sendNotification(message, title, link) {
-    const isHighPriority = message.includes(config.highPriorityText);
-    const options = {
-        method: 'POST',
-        body: formatMessage(message),
-        headers: {
-            title: title,
-            priority: isHighPriority ? config.highPriority : config.normalPriority,
-            tags: isHighPriority ? config.tags : '',
-            click: link
+function sendNotification(feedName, message, title, link) {
+  const feed = feeds.get(feedName);
+  const {priority, tags} = getPriorityAndTags(title, message, feed);
+  if (priority === 'ignore') {
+    console.log('Ignoring message: ' + message);
+    return;
+  }
+  const options = {
+    method: 'POST',
+    body: formatMessage(message, feed),
+    headers: {
+      title: title,
+      priority: priority,
+      tags: tags,
+      click: link
+    }
+  };
+  fetch(config.ntfyUrl + '/' + feed.topic, options)
+      .then()
+      .catch(error => console.error('Error:', error));
+}
+
+function getPriorityAndTags(title, message, feed) {
+  let tags = feed.tags;
+  if (feed.categories) {
+    for (const category of feed.categories) {
+      if (category.titles) {
+        const regex = new RegExp(category.titles.join('|'), 'i');
+        if (regex.test(title)) {
+          if (category.tags) {
+            if (tags) {
+              tags = tags.concat(category.tags);
+            } else {
+              tags = category.tags;
+            }
+          }
+          const priority = category.priority
+              ? category.priority
+              : feed.defaultPriority
+                  ? feed.defaultPriority
+                  : config.defaultPriority;
+          return {priority: priority, tags: tags};
         }
-    };
-    fetch(config.ntfyUrl + '/' + config.topic, options)
-        .then()
-        .catch(error => console.error('Error:', error));
+      }
+      if (category.contents) {
+        const regex = new RegExp(category.contents.join('|'), 'i');
+        if (regex.test(message)) {
+          if (category.tags) {
+            if (tags) {
+              tags = tags.concat(category.tags);
+            } else {
+              tags = category.tags;
+            }
+          }
+          const priority = category.priority
+              ? category.priority
+              : feed.defaultPriority
+                  ? feed.defaultPriority
+                  : config.defaultPriority;
+          return {priority: priority, tags: tags};
+        }
+      }
+    }
+  }
+  return {priority: feed.priority ? feed.priority : config.defaultPriority, tags: tags};
 }
 
-function formatMessage(message) {
-    return message
-        .replaceAll('<br>', ';')
-        .split(';')
-        .map(s => s.trim())
-        .filter(s => s)
-        .join('\n');
+function formatMessage(message, feed) {
+  let formattedMessage = message;
+  feed?.replacements?.forEach(replacement => {
+    formattedMessage = formattedMessage.replaceAll(replacement.from, replacement.to);
+  });
+  return formattedMessage
+      .split('\n')
+      .filter(m => m)
+      .map(m => feed.trim ? m.trim() : m)
+      .filter(m => m !== '')
+      .join('\n');
 }
 
 initialize();
 
-cron.schedule(config.cronExpression, async () => {
-    const newItems = await getRssFeedItems();
-    if (previousItems) {
-        newItems.forEach((value, key) => {
-            if (!previousItems.has(key)) {
-                sendNotification(value.content, value.title, value.link)
-            }
-        });
+feeds.forEach((feed, name) => {
+  cronJobs.push(cron.schedule(feed.cronExpression ? feed.cronExpression : config.defaultCronExpression, async () => {
+    const newItems = await getRssFeedItems(feed.urls);
+    if (previousItems.has(name)) {
+      newItems.forEach((itemValue, itemKey) => {
+        if (!previousItems.get(name).has(itemKey)) {
+          sendNotification(name, itemValue.content, itemValue.title, itemValue.link)
+        }
+      });
     }
-    previousItems = newItems;
+    previousItems.set(name, newItems);
+  }));
 });
+
+cronJobs.forEach(cronJob => cronJob.start());

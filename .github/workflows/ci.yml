@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - 'main'
+    paths:
+      - '*.js'
+      - 'Dockerfile'
+      - 'package*.json'
 jobs:
   docker:
     runs-on: ubuntu-latest
@@ -24,4 +28,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/chunkystyles/incidentsalerts:latest
+          tags: ghcr.io/chunkystyles/rsstontfy:latest

@@ -1,13 +1,13 @@
 {
-  "name": "incidentsalerts",
+  "name": "rsstontfy",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "author": "Allen Archer",
+  "license": "GNU",
+  "description": "A simple app to poll RSS feeds and send notifications to ntfy.sh",
   "dependencies": {
     "node-cron": "^3.0.3",
     "node-fetch": "^3.3.2",
