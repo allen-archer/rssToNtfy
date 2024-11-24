@@ -2,7 +2,7 @@
 
 ## Purpose of this project
 
-I wanted a way to get push notifications for RSS feeds with some customization.
+I wanted a way to get push notifications for RSS feeds with some customization. The notifications will have a title and body. Clicking or tapping the notification body will open the link provided by the RSS feed.
 
 ## How to use this project
 
