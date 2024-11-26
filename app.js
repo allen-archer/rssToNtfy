@@ -17,6 +17,11 @@ function initialize() {
   config.feeds.forEach(feed => {
     feeds.set(feed.name, feed);
   });
+  if (config.ntfy.user && config.ntfy.password) {
+    config.ntfy.basicAuth = `Basic ${Buffer.from(config.ntfy.user + ':' + config.ntfy.password, 'utf8').toString('base64')}`;
+  } else if (config.ntfy.token) {
+    config.ntfy.token = `Bearer ${config.ntfy.token}`;
+  }
 }
 
 async function getRssFeedItems(urls) {
@@ -50,7 +55,12 @@ function sendNotification(feedName, message, title, link) {
   if (tags) {
     options.headers.tags = tags.join(',');
   }
-  fetch(config.ntfyUrl + '/' + feed.topic, options)
+  if (config.ntfy.basicAuth) {
+    options.headers.Authorization = config.ntfy.basicAuth;
+  } else if (config.ntfy.token) {
+    options.headers.Authorization = config.ntfy.token;
+  }
+  fetch(config.ntfy.url + '/' + feed.topic, options)
       .then()
       .catch(error => console.error('Error:', error));
 }
