@@ -17,8 +17,16 @@ Create a config.yml file in a directory somewhere on your host machine. The cont
 defaultPriority: 1
   # any cron expression will work here, overridden by feed cronExpression
 defaultCronExpression: '*/5 * * * *'
-  # the URL of the ntfy.sh instance you want to use
-ntfyUrl: 'https://ntfy.sh/'
+ntfy:
+    # the URL of the ntfy.sh instance you want to use
+  url: 'https://ntfy.sh/'
+    # OPTIONAL, the user and password to authenticate with ntfy.sh
+    # both must be set for basic authentication
+  user: 'yourname'  
+  password: 'yourpassword'
+    # OPTIONAL, the token to authenticate with ntfy.sh
+    # if user and password are set, this is ignored
+  token: 'tk_AgQdq7mVBoFD37zQVN29RhuMzNIz2'
   # a list of feeds to poll, use as few or as many as you want, each is completely independent
 feeds:
       # a unique name for this feed
