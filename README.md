@@ -57,14 +57,22 @@ feeds:
       # These are processed from top to bottom, and the first one that matches is the one that is used
       # If no categories match, the defaultPriority and defaultTags are used
     categories:
-          # OPTIONAL, if any of the words are find in the content/body of the item, this category is used 
+          # OPTIONAL, matches on the contents of the item, either through lines of text, or a regex expression
       - contents:
-          - 'movie'
-          - 'theater'
+            #OPTIONAL, if any of these lines of text are found in the contentes of the item, this category is used
+          text:
+            - 'movie'
+            - 'theater'
+            # OPTIONAL, if this regex is found in the contents of the item, this category is used
+          regex: '\d STARS'
           # OPTIONAL, if any of these words are found in the title of the item, this category is used 
         title:
-          - 'movie'
-          - 'theater'
+            #OPTIONAL, if any of these lines of text are found in the title of the item, this category is used
+          text:
+            - 'movie'
+            - 'theater'
+            # OPTIONAL, if this regex is found in the title of the item, this category is used
+          regex: '\d STARS'
           # OPTIONAL, additional tags to add to the tags list
         tags:
           - film_strip

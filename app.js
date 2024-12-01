@@ -39,13 +39,14 @@ async function getRssFeedItems(urls) {
 
 function sendNotification(feedName, message, title, link) {
   const feed = feeds.get(feedName);
-  const {priority, tags} = getPriorityAndTags(title, message, feed);
+  const formattedMessage = formatMessage(message, feed);
+  const {priority, tags} = getPriorityAndTags(title, formattedMessage, feed);
   if (priority === 'ignore') {
     return;
   }
   const options = {
     method: 'POST',
-    body: formatMessage(message, feed),
+    body: formattedMessage,
     headers: {
       title: title,
       priority: priority,
@@ -69,9 +70,10 @@ function getPriorityAndTags(title, message, feed) {
   let tags = feed.tags;
   if (feed.categories) {
     for (const category of feed.categories) {
-      if (category.titles) {
-        const regex = new RegExp(category.titles.join('|'), 'i');
-        if (regex.test(title)) {
+      let matched = false;
+      if (category.title) {
+        if (doesCriteriaMatch(category.title, title)) {
+          matched = true;
           if (category.tags) {
             if (tags) {
               tags = tags.concat(category.tags);
@@ -79,17 +81,11 @@ function getPriorityAndTags(title, message, feed) {
               tags = category.tags;
             }
           }
-          const priority = category.priority
-              ? category.priority
-              : feed.defaultPriority
-                  ? feed.defaultPriority
-                  : config.defaultPriority;
-          return {priority: priority, tags: tags};
         }
       }
       if (category.contents) {
-        const regex = new RegExp(category.contents.join('|'), 'i');
-        if (regex.test(message)) {
+        if (doesCriteriaMatch(category.contents, message)) {
+          matched = true;
           if (category.tags) {
             if (tags) {
               tags = tags.concat(category.tags);
@@ -97,17 +93,34 @@ function getPriorityAndTags(title, message, feed) {
               tags = category.tags;
             }
           }
-          const priority = category.priority
-              ? category.priority
-              : feed.defaultPriority
-                  ? feed.defaultPriority
-                  : config.defaultPriority;
-          return {priority: priority, tags: tags};
         }
+      }
+      if (matched) {
+        const priority = category.priority
+            ? category.priority
+            : feed.defaultPriority
+                ? feed.defaultPriority
+                : config.defaultPriority;
+        return {priority: priority, tags: tags};
       }
     }
   }
   return {priority: feed.priority ? feed.priority : config.defaultPriority, tags: tags};
+}
+
+function doesCriteriaMatch(criteria, text) {
+  if (criteria.text) {
+    const regex = new RegExp(criteria.text.join('|'), 'i');
+    if (regex.test(text)) {
+      return true;
+    }
+  } else if (criteria.regex) {
+    const regex = new RegExp(criteria.regex, 'm');
+    if (regex.test(text)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function formatMessage(message, feed) {
