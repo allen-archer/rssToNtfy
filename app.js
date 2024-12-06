@@ -68,54 +68,51 @@ function sendNotification(feedName, message, title, link) {
 
 function getPriorityAndTags(title, message, feed) {
   let tags = feed.tags;
+  let priority = feed.priority ? feed.priority : config.defaultPriority;
+  let matched = false;
   if (feed.categories) {
     for (const category of feed.categories) {
-      let matched = false;
-      if (category.title) {
-        if (doesCriteriaMatch(category.title, title)) {
-          matched = true;
-          if (category.tags) {
-            if (tags) {
-              tags = tags.concat(category.tags);
+      const types = [{criterion: category.title, content: title}, {criterion: category.contents, content: message}]
+      for (const type of types) {
+        const criterion = type.criterion;
+        const content = type.content;
+        if (criterion) {
+          if (doesCriterionMatch(criterion, content)) {
+            if (!matched) {
+              priority = category.priority;
             } else {
-              tags = category.tags;
+              priority = getHigherPriorty(priority, category.priority);
+            }
+            matched = true;
+            if (category.tags) {
+              if (tags) {
+                tags = tags.concat(category.tags);
+              } else {
+                tags = category.tags;
+              }
             }
           }
         }
-      }
-      if (category.contents) {
-        if (doesCriteriaMatch(category.contents, message)) {
-          matched = true;
-          if (category.tags) {
-            if (tags) {
-              tags = tags.concat(category.tags);
-            } else {
-              tags = category.tags;
-            }
-          }
-        }
-      }
-      if (matched) {
-        const priority = category.priority
-            ? category.priority
-            : feed.defaultPriority
-                ? feed.defaultPriority
-                : config.defaultPriority;
-        return {priority: priority, tags: tags};
       }
     }
   }
-  return {priority: feed.priority ? feed.priority : config.defaultPriority, tags: tags};
+  return {priority: priority, tags: tags};
 }
 
-function doesCriteriaMatch(criteria, text) {
-  if (criteria.text) {
-    const regex = new RegExp(criteria.text.join('|'), 'i');
+function getHigherPriorty(priorityLeft, priorityRight) {
+  const left = priorityLeft === 'ignore' ? -1 : Number(priorityLeft);
+  const right = priorityRight === 'ignore' ? -1 : Number(priorityRight);
+  return left > right ? left : right;
+}
+
+function doesCriterionMatch(criterion, text) {
+  if (criterion.text) {
+    const regex = new RegExp(criterion.text.join('|'), 'i');
     if (regex.test(text)) {
       return true;
     }
-  } else if (criteria.regex) {
-    const regex = new RegExp(criteria.regex, 'm');
+  } else if (criterion.regex) {
+    const regex = new RegExp(criterion.regex, 'm');
     if (regex.test(text)) {
       return true;
     }
@@ -144,7 +141,11 @@ feeds.forEach((feed, name) => {
     if (previousItems.has(name)) {
       newItems.forEach((itemValue, itemKey) => {
         if (!previousItems.get(name).has(itemKey)) {
-          sendNotification(name, itemValue.content, itemValue.title, itemValue.link)
+          try {
+            sendNotification(name, itemValue.content, itemValue.title, itemValue.link);
+          } catch (e) {
+            console.error(e);
+          }
         }
       });
     }
