@@ -41,7 +41,7 @@ function sendNotification(feedName, message, title, link) {
   const feed = feeds.get(feedName);
   const formattedMessage = formatMessage(message, feed);
   const {priority, tags} = getPriorityAndTags(title, formattedMessage, feed);
-  if (priority === 'ignore') {
+  if (priority === 'ignore' || priority === 'super_ignore') {
     return;
   }
   const options = {
@@ -81,7 +81,7 @@ function getPriorityAndTags(title, message, feed) {
             if (!matched) {
               priority = category.priority;
             } else {
-              priority = getHigherPriorty(priority, category.priority);
+              priority = getHigherPriority(priority, category.priority);
             }
             matched = true;
             if (category.tags) {
@@ -99,10 +99,14 @@ function getPriorityAndTags(title, message, feed) {
   return {priority: priority, tags: tags};
 }
 
-function getHigherPriorty(priorityLeft, priorityRight) {
-  const left = priorityLeft === 'ignore' ? -1 : Number(priorityLeft);
-  const right = priorityRight === 'ignore' ? -1 : Number(priorityRight);
-  return left > right ? left : right;
+function getHigherPriority(priorityLeft, priorityRight) {
+  const left = priorityLeft === 'super_ignore'
+      ? 99 : priorityLeft === 'ignore'
+          ? -1 : Number(priorityLeft);
+  const right = priorityRight === 'super_ignore'
+      ? 99 : priorityRight === 'ignore'
+          ? -1 : Number(priorityRight);
+  return left > right ? priorityLeft : priorityRight;
 }
 
 function doesCriterionMatch(criterion, text) {

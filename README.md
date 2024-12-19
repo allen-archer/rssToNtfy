@@ -83,7 +83,7 @@ feeds:
 
 ### priority
 
-Documentation for priority can be found at https://docs.ntfy.sh/publish/#message-priority Setting the priority to 'ignore' is specific to this app and is used to filter out undesired notifications.
+Documentation for priority can be found at https://docs.ntfy.sh/publish/#message-priority Setting the priority to 'ignore' is specific to this app and is used to filter out undesired notifications. Setting priority to 'super_ignore' will prevent the notification from being sent even if it matches with other categories.
 
 ### tags
 
