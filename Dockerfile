@@ -1,4 +1,4 @@
-FROM node:23-slim
+FROM node:lts-slim
 WORKDIR /rsstontfy
 CMD ["node", "app.js"]
 COPY package*.json ./
