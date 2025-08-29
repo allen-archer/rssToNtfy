@@ -8,6 +8,7 @@ on:
       - '*.js'
       - 'Dockerfile'
       - 'package*.json'
+  workflow_dispatch
 jobs:
   docker:
     runs-on: ubuntu-latest
